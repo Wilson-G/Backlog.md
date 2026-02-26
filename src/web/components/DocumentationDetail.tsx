@@ -1,4 +1,5 @@
 import React, {useState, useEffect, memo, useCallback} from 'react';
+import { useTranslation } from 'react-i18next';
 import {useParams, useNavigate, useSearchParams} from 'react-router-dom';
 import {apiClient} from '../lib/api';
 import MDEditor from '@uiw/react-md-editor';
@@ -67,6 +68,7 @@ interface DocumentationDetailProps {
 }
 
 export default function DocumentationDetail({docs, onRefreshData}: DocumentationDetailProps) {
+    const { t } = useTranslation();
     const {id, title} = useParams<{ id: string; title: string }>();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -245,9 +247,8 @@ export default function DocumentationDetail({docs, onRefreshData}: Documentation
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">No document selected</h3>
-                    <p className="mt-1 text-sm text-gray-500">Select a document from the sidebar to view its
-                        content.</p>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">{t('document.noSelection')}</h3>
+                    <p className="mt-1 text-sm text-gray-500">{t('document.noSelectionHint')}</p>
                 </div>
             </div>
         );
@@ -256,7 +257,7 @@ export default function DocumentationDetail({docs, onRefreshData}: Documentation
     if (isLoading) {
         return (
             <div className="flex-1 flex items-center justify-center">
-                <div className="text-gray-500">Loading...</div>
+                <div className="text-gray-500">{t('document.loading')}</div>
             </div>
         );
     }
@@ -275,11 +276,11 @@ export default function DocumentationDetail({docs, onRefreshData}: Documentation
                                         value={docTitle}
                                         onChange={(e) => setDocTitle(e.target.value)}
                                         className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2 w-full bg-transparent border border-gray-300 dark:border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-colors duration-200"
-                                        placeholder="Document title"
+                                        placeholder={t('document.titlePlaceholder')}
                                     />
                                 ) : (
                                     <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2 transition-colors duration-200">
-                                        {docTitle || document?.title || (title ? decodeURIComponent(title) : `Document ${id}`)}
+                                        {docTitle || document?.title || (title ? decodeURIComponent(title) : `${t('document.fallbackPrefix')} ${id}`)}
                                     </h1>
                                 )}
                                 <div className="flex items-center space-x-6 text-sm text-gray-500 dark:text-gray-400 transition-colors duration-200">
@@ -288,14 +289,14 @@ export default function DocumentationDetail({docs, onRefreshData}: Documentation
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                                   d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a.997.997 0 01-1.414 0l-7-7A1.997 1.997 0 013 12V7a4 4 0 014-4z"/>
                                         </svg>
-                                        <span>ID: {document?.id || `doc-${id}`}</span>
+                                        <span>{t('document.idLabel')} {document?.id || `doc-${id}`}</span>
                                     </div>
                                     <div className="flex items-center space-x-2">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                                   d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                                         </svg>
-                                        <span>Documentation</span>
+                                        <span>{t('document.typeLabel')}</span>
                                     </div>
                                     {document?.createdDate && (
                                         <div className="flex items-center space-x-2">
@@ -304,7 +305,7 @@ export default function DocumentationDetail({docs, onRefreshData}: Documentation
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                                       d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                             </svg>
-                                            <span>Created: {document.createdDate}</span>
+                                            <span>{t('document.createdLabel')} {document.createdDate}</span>
                                         </div>
                                     )}
                                 </div>
@@ -360,6 +361,7 @@ export default function DocumentationDetail({docs, onRefreshData}: Documentation
                             value={content}
                             onChange={(val) => setContent(val || '')}
                             isEditing={isEditing}
+                            
                         />
                     </div>
                 </div>
@@ -372,7 +374,7 @@ export default function DocumentationDetail({docs, onRefreshData}: Documentation
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                       d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                             </svg>
-                            <span className="text-sm text-red-700">Failed to save: {saveError.message}</span>
+                            <span className="text-sm text-red-700">{t('document.saveFailedPrefix')} {saveError.message}</span>
                             <button
                                 onClick={() => setSaveError(null)}
                                 className="ml-auto text-red-700 hover:text-red-900"
@@ -390,7 +392,7 @@ export default function DocumentationDetail({docs, onRefreshData}: Documentation
             {/* Save Success Toast */}
             {showSaveSuccess && (
                 <SuccessToast
-                    message={`Document "${docTitle}" saved successfully!`}
+                    message={`${docTitle} ${t('document.saveSuccessSuffix')}`}
                     onDismiss={() => setShowSaveSuccess(false)}
                     icon={
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

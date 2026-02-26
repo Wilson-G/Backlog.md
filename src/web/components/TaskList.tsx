@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { apiClient } from "../lib/api";
 import type {
@@ -25,11 +26,11 @@ interface TaskListProps {
 	onRefreshData?: () => Promise<void>;
 }
 
-const PRIORITY_OPTIONS: Array<{ label: string; value: "" | SearchPriorityFilter }> = [
-	{ label: "All priorities", value: "" },
-	{ label: "High", value: "high" },
-	{ label: "Medium", value: "medium" },
-	{ label: "Low", value: "low" },
+const getPriorityOptions = (t: (key: string) => string): Array<{ label: string; value: "" | SearchPriorityFilter }> => [
+	{ label: t("filter.allPriorities"), value: "" },
+	{ label: t("priority.high"), value: "high" },
+	{ label: t("priority.medium"), value: "medium" },
+	{ label: t("priority.low"), value: "low" },
 ];
 
 type TaskSortColumn = "id" | "title" | "status" | "priority" | "milestone" | "created";
@@ -88,6 +89,7 @@ const TaskList: React.FC<TaskListProps> = ({
 	archivedMilestones,
 	onRefreshData,
 }) => {
+	const { t } = useTranslation();
 	const [searchParams, setSearchParams] = useSearchParams();
 	const [searchValue, setSearchValue] = useState(() => searchParams.get("query") ?? "");
 	const [statusFilter, setStatusFilter] = useState(() => searchParams.get("status") ?? "");
@@ -347,7 +349,7 @@ const TaskList: React.FC<TaskListProps> = ({
 				console.error("Failed to apply task filters:", err);
 				if (!cancelled) {
 					setDisplayTasks([]);
-					setError("Unable to fetch tasks for the selected filters.");
+					setError(t("taskList.filterError"));
 				}
 			}
 		};
@@ -455,7 +457,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
 	const handleCleanupSuccess = async (movedCount: number) => {
 		setShowCleanupModal(false);
-		setCleanupSuccessMessage(`Successfully moved ${movedCount} task${movedCount !== 1 ? 's' : ''} to completed folder`);
+		setCleanupSuccessMessage(t("cleanup.successMessage", { count: movedCount }));
 
 		// Refresh the data - existing effects will handle re-filtering automatically
 		if (onRefreshData) {
@@ -635,12 +637,12 @@ const TaskList: React.FC<TaskListProps> = ({
 		<div className="container mx-auto px-4 py-8 transition-colors duration-200">
 			<div className="flex flex-col gap-4 mb-6">
 				<div className="flex items-center justify-between gap-3">
-						<h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Tasks</h1>
+						<h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("taskList.title")}</h1>
 						<button
 							className="inline-flex items-center px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 dark:focus:ring-offset-gray-900 transition-colors duration-200"
 							onClick={onNewTask}
 						>
-							+ New Task
+							{t("task.newTask")}
 					</button>
 				</div>
 
@@ -656,7 +658,7 @@ const TaskList: React.FC<TaskListProps> = ({
 							type="text"
 							value={searchValue}
 							onChange={(event) => handleSearchChange(event.target.value)}
-							placeholder="Search tasks"
+							placeholder={t("search.placeholder")}
 							className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-stone-500 dark:focus:ring-stone-400 focus:border-transparent transition-colors duration-200"
 						/>
 						{searchValue && (
@@ -677,7 +679,7 @@ const TaskList: React.FC<TaskListProps> = ({
 						onChange={(event) => handleStatusChange(event.target.value)}
 						className="min-w-[140px] h-10 py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-stone-500 dark:focus:ring-stone-400 transition-colors duration-200"
 					>
-						<option value="">All statuses</option>
+						<option value="">{t("filter.allStatuses")}</option>
 						{availableStatuses.map((status) => (
 							<option key={status} value={status}>
 								{status}
@@ -690,7 +692,7 @@ const TaskList: React.FC<TaskListProps> = ({
 						onChange={(event) => handlePriorityChange(event.target.value as "" | SearchPriorityFilter)}
 						className="min-w-[140px] h-10 py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-stone-500 dark:focus:ring-stone-400 transition-colors duration-200"
 					>
-						{PRIORITY_OPTIONS.map((option) => (
+						{getPriorityOptions(t).map((option) => (
 							<option key={option.value || "all"} value={option.value}>
 								{option.label}
 							</option>
@@ -702,8 +704,8 @@ const TaskList: React.FC<TaskListProps> = ({
 						onChange={(event) => handleMilestoneChange(event.target.value)}
 						className="min-w-[160px] h-10 py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-stone-500 dark:focus:ring-stone-400 transition-colors duration-200"
 					>
-						<option value="">All milestones</option>
-						<option value="__none">No milestone</option>
+						<option value="">{t("filter.allMilestones")}</option>
+						<option value="__none">{t("milestone.none")}</option>
 						{milestoneOptions.map((milestone) => (
 							<option key={milestone} value={milestone}>
 								{getMilestoneLabel(milestone, milestoneEntities)}
@@ -719,13 +721,13 @@ const TaskList: React.FC<TaskListProps> = ({
 							className="min-w-[200px] py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-stone-500 dark:focus:ring-stone-400 transition-colors duration-200 text-left"
 						>
 							<div className="flex items-center justify-between gap-2">
-								<span>Labels</span>
+								<span>{t("labels.title")}</span>
 								<span className="text-xs text-gray-500 dark:text-gray-400">
 									{labelFilter.length === 0
-										? "All"
+										? t("filter.all")
 										: labelFilter.length === 1
 											? labelFilter[0]
-											: `${labelFilter.length} selected`}
+											: t("labels.selectedCount", { count: labelFilter.length })}
 								</span>
 							</div>
 						</button>
@@ -735,7 +737,7 @@ const TaskList: React.FC<TaskListProps> = ({
 								className="absolute z-10 mt-2 w-[220px] max-h-56 overflow-y-auto rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg"
 							>
 								{mergedAvailableLabels.length === 0 ? (
-									<div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">No labels</div>
+									<div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">{t("labels.empty")}</div>
 								) : (
 									mergedAvailableLabels.map((label) => {
 										const isSelected = labelFilter.includes(label);
@@ -769,7 +771,7 @@ const TaskList: React.FC<TaskListProps> = ({
 											setShowLabelsMenu(false);
 										}}
 									>
-										Clear label filter
+										{t("filter.clearLabels")}
 									</button>
 								)}
 							</div>
@@ -784,12 +786,12 @@ const TaskList: React.FC<TaskListProps> = ({
 									type="button"
 									onClick={() => setShowCleanupModal(true)}
 									className="py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 flex items-center gap-2 whitespace-nowrap"
-									title="Clean up old completed tasks"
+									title={t("cleanup.tooltip")}
 								>
 									<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
 								</svg>
-								Clean Up
+								{t("cleanup.button")}
 							</button>
 						)}
 
@@ -801,12 +803,12 @@ const TaskList: React.FC<TaskListProps> = ({
 									style={{ visibility: hasActiveFilters ? "visible" : "hidden" }}
 									aria-hidden={!hasActiveFilters}
 								>
-									Clear filters
+									{t("filter.clearFilters")}
 							</button>
 						</div>
 
 						<div className="text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap text-right min-w-[170px]">
-							Showing {currentCount} of {totalTasks} tasks
+							{t("taskList.showingCount", { count: currentCount, total: totalTasks })}
 						</div>
 					</div>
 				</div>
@@ -824,12 +826,12 @@ const TaskList: React.FC<TaskListProps> = ({
 						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
 					</svg>
 					<h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-						{hasActiveFilters ? "No tasks match the current filters" : "No tasks"}
+						{hasActiveFilters ? t("taskList.emptyFiltered") : t("taskList.empty")}
 					</h3>
 					<p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
 						{hasActiveFilters
-							? "Try adjusting your search or clearing filters to see more tasks."
-							: "Get started by creating a new task."}
+							? t("taskList.emptyFilteredHint")
+							: t("taskList.emptyHint")}
 					</p>
 				</div>
 			) : (
@@ -840,14 +842,14 @@ const TaskList: React.FC<TaskListProps> = ({
 								{renderColumnGroup()}
 								<thead>
 									<tr className="text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
-										{renderSortableHeader("ID", "id")}
-										{renderSortableHeader("Title", "title")}
-										{renderSortableHeader("Status", "status")}
-										{renderSortableHeader("Priority", "priority")}
-										<th className="px-3 py-2">Labels</th>
-										<th className="px-3 py-2">Assignee</th>
-										{renderSortableHeader("Milestone", "milestone")}
-										{renderSortableHeader("Created", "created")}
+										{renderSortableHeader(t("task.columnId"), "id")}
+										{renderSortableHeader(t("task.columnTitle"), "title")}
+										{renderSortableHeader(t("task.columnStatus"), "status")}
+										{renderSortableHeader(t("task.columnPriority"), "priority")}
+										<th className="px-3 py-2">{t("labels.title")}</th>
+										<th className="px-3 py-2">{t("task.columnAssignee")}</th>
+										{renderSortableHeader(t("task.fieldMilestone"), "milestone")}
+										{renderSortableHeader(t("task.columnCreated"), "created")}
 									</tr>
 								</thead>
 							</table>
@@ -894,7 +896,7 @@ const TaskList: React.FC<TaskListProps> = ({
 													{isFromOtherBranch && task.branch && (
 														<span
 															className="inline-flex shrink-0 items-center rounded-circle bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-															title={`Read-only task from ${task.branch} branch`}
+															title={t("task.readOnlyFromBranch") + " " + task.branch + " " + t("common.branch")}
 														>
 															{task.branch}
 														</span>
@@ -911,7 +913,7 @@ const TaskList: React.FC<TaskListProps> = ({
 													<span
 														className={`inline-flex rounded-circle px-2 py-0.5 text-[11px] font-medium ${getPriorityColor(task.priority)}`}
 													>
-														{task.priority}
+														{t(`priority.${task.priority.toLowerCase()}`, { defaultValue: task.priority })}
 													</span>
 												) : (
 													<span className="text-xs text-gray-300 dark:text-gray-600">—</span>

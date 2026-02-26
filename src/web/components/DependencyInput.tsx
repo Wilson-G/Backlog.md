@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, type KeyboardEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type Task } from '../../types';
 
 interface DependencyInputProps {
@@ -10,7 +11,9 @@ interface DependencyInputProps {
   disabled?: boolean;
 }
 
-const DependencyInput: React.FC<DependencyInputProps> = ({ value, onChange, availableTasks, currentTaskId, label = 'Dependencies', disabled }) => {
+const DependencyInput: React.FC<DependencyInputProps> = ({ value, onChange, availableTasks, currentTaskId, label, disabled }) => {
+  const { t } = useTranslation();
+  const displayLabel = label ?? t('dependencies.label');
   const [inputValue, setInputValue] = useState('');
   const [suggestions, setSuggestions] = useState<Task[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -102,9 +105,9 @@ const DependencyInput: React.FC<DependencyInputProps> = ({ value, onChange, avai
 
   return (
     <div>
-      {label ? (
+      {label !== undefined ? (
         <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 transition-colors duration-200">
-          {label}
+          {label || t('dependencies.label')}
         </label>
       ) : null}
       <div className="relative w-full">
@@ -146,7 +149,7 @@ const DependencyInput: React.FC<DependencyInputProps> = ({ value, onChange, avai
             value={inputValue}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder={value.length === 0 ? "Type task ID or title, then press Enter or comma" : "Add more dependencies..."}
+            placeholder={value.length === 0 ? t('dependencies.placeholder') : t('dependencies.placeholderMore')}
             className="w-full outline-none text-sm bg-transparent resize-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
             rows={1}
             disabled={disabled}

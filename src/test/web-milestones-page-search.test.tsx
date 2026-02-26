@@ -5,6 +5,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import type { Milestone, Task } from "../types/index.ts";
+import "../web/i18n";
 import MilestonesPage from "../web/components/MilestonesPage.tsx";
 
 const createTask = (overrides: Partial<Task>): Task => ({

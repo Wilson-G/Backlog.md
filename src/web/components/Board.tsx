@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type Milestone, type Task } from '../../types';
 import { apiClient, type ReorderTaskPayload } from '../lib/api';
 import { buildLanes, DEFAULT_LANE_KEY, groupTasksByLaneAndStatus, type LaneMode } from '../lib/lanes';
@@ -37,6 +38,7 @@ const Board: React.FC<BoardProps> = ({
   onLaneChange,
   milestoneFilter,
 }) => {
+  const { t } = useTranslation();
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [dragSourceStatus, setDragSourceStatus] = useState<string | null>(null);
   const [dragSourceLane, setDragSourceLane] = useState<string | null>(null);
@@ -207,7 +209,7 @@ const Board: React.FC<BoardProps> = ({
       }
       setUpdateError(null);
     } catch (err) {
-      setUpdateError(err instanceof Error ? err.message : 'Failed to update task');
+      setUpdateError(err instanceof Error ? err.message : t('board.updateError'));
     }
   };
 
@@ -220,13 +222,13 @@ const Board: React.FC<BoardProps> = ({
       }
       setUpdateError(null);
     } catch (err) {
-      setUpdateError(err instanceof Error ? err.message : 'Failed to reorder task');
+      setUpdateError(err instanceof Error ? err.message : t('board.reorderError'));
     }
   };
 
   const handleCleanupSuccess = async (movedCount: number) => {
     setShowCleanupModal(false);
-    setCleanupSuccessMessage(`Successfully moved ${movedCount} task${movedCount !== 1 ? 's' : ''} to completed folder`);
+    setCleanupSuccessMessage(t('cleanup.successMessage', { count: movedCount }));
 
     // Refresh data to reflect the changes
     if (onRefreshData) {
@@ -347,7 +349,7 @@ const Board: React.FC<BoardProps> = ({
 
   const getLaneLabel = (lane: typeof lanes[0]): string => {
     if (lane.isNoMilestone || !lane.milestone) {
-      return 'Unassigned';
+      return t('board.unassigned');
     }
     return lane.label;
   };
@@ -362,7 +364,7 @@ const Board: React.FC<BoardProps> = ({
   if (isLoading && statuses.length === 0) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="text-lg text-gray-600 dark:text-gray-300 transition-colors duration-200">Loading tasks...</div>
+        <div className="text-lg text-gray-600 dark:text-gray-300 transition-colors duration-200">{t('board.loading')}</div>
       </div>
     );
   }
@@ -381,7 +383,7 @@ const Board: React.FC<BoardProps> = ({
       )}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 transition-colors duration-200">Kanban Board</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 transition-colors duration-200">{t('board.title')}</h2>
           <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-1 bg-gray-50 dark:bg-gray-800/50 transition-colors duration-200">
             <button
               type="button"
@@ -392,13 +394,13 @@ const Board: React.FC<BoardProps> = ({
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               }`}
             >
-              All Tasks
+              {t('board.allTasks')}
             </button>
             <button
               type="button"
               onClick={() => onLaneChange('milestone')}
               disabled={!hasTasksWithMilestones}
-              title={!hasTasksWithMilestones ? 'No tasks have milestones. Assign milestones to tasks first.' : 'Group tasks by milestone'}
+              title={!hasTasksWithMilestones ? t('board.noMilestonesTooltip') : t('board.milestoneTooltip')}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
                 !hasTasksWithMilestones
                   ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-50'
@@ -407,7 +409,7 @@ const Board: React.FC<BoardProps> = ({
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               }`}
             >
-              Milestone
+              {t('board.milestone')}
             </button>
           </div>
         </div>
@@ -415,7 +417,7 @@ const Board: React.FC<BoardProps> = ({
 	          className="inline-flex items-center px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 dark:focus:ring-blue-500 dark:focus:ring-offset-gray-800 transition-colors duration-200"
 	          onClick={onNewTask}
 	        >
-	          + New Task
+	          {t('board.newTask')}
         </button>
       </div>
 

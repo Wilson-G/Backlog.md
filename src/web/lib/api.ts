@@ -467,6 +467,42 @@ export class ApiClient {
 		return this.fetchJson<{ initialized: boolean; projectPath: string }>(`${API_BASE}/status`);
 	}
 
+	async fetchProjects(): Promise<Array<{ name: string; path: string; active: boolean }>> {
+		const response = await this.fetchWithRetry(`${API_BASE}/projects`);
+		return await response.json();
+	}
+
+	async switchProject(path: string): Promise<{ success: boolean; projectName: string }> {
+		const response = await this.fetchWithRetry(`${API_BASE}/projects/switch`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ path }),
+		});
+		return await response.json();
+	}
+
+	async vikingLs(path?: string, recursive?: boolean): Promise<{ output: string; error?: string }> {
+		const params = new URLSearchParams();
+		if (path) params.set("path", path);
+		if (recursive) params.set("recursive", "true");
+		const response = await this.fetchWithRetry(`${API_BASE}/viking/ls?${params}`);
+		return await response.json();
+	}
+
+	async vikingContent(
+		uri: string,
+		level: "abstract" | "overview" | "read",
+	): Promise<{ output: string; error?: string }> {
+		const params = new URLSearchParams({ uri, level });
+		const response = await this.fetchWithRetry(`${API_BASE}/viking/content?${params}`);
+		return await response.json();
+	}
+
+	async vikingStatus(): Promise<{ output: string; error?: string }> {
+		const response = await this.fetchWithRetry(`${API_BASE}/viking/status`);
+		return await response.json();
+	}
+
 	async initializeProject(options: {
 		projectName: string;
 		integrationMode: "mcp" | "cli" | "none";

@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import Fuse from "fuse.js";
 import { apiClient } from "../lib/api";
@@ -56,6 +57,7 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 	onEditTask,
 	onRefreshData,
 }) => {
+	const { t } = useTranslation();
 	const [newMilestone, setNewMilestone] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
@@ -224,7 +226,7 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 		event?.preventDefault();
 		const value = newMilestone.trim();
 		if (!value) {
-			setError("Milestone name cannot be empty.");
+			setError(t("milestone.nameRequired"));
 			setSuccess(null);
 			return;
 		}
@@ -235,7 +237,7 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 		try {
 			await apiClient.createMilestone(value);
 			setNewMilestone("");
-			setSuccess(`Added milestone "${value}"`);
+			setSuccess(t("milestone.addedSuccess", { name: value }));
 			setShowAddModal(false);
 			if (onRefreshData) {
 				await onRefreshData();
@@ -243,7 +245,7 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 			setTimeout(() => setSuccess(null), 3000);
 		} catch (err) {
 			console.error("Failed to add milestone:", err);
-			setError(err instanceof Error ? err.message : "Failed to add milestone.");
+			setError(err instanceof Error ? err.message : t("milestone.addFailed"));
 		} finally {
 			setIsSaving(false);
 		}
@@ -255,7 +257,7 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 
 			const label = bucket.label || bucket.milestone;
 			const confirmed = window.confirm(
-				`Archive milestone "${label}"? This moves it to backlog/archive/milestones and hides it from the milestones view.`,
+				t("milestone.archiveConfirmPrefix", { name: label }) + t("milestone.archiveConfirmSuffix"),
 			);
 			if (!confirmed) return;
 
@@ -264,19 +266,19 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 			setSuccess(null);
 			try {
 				await apiClient.archiveMilestone(bucket.milestone);
-				setSuccess(`Archived milestone "${label}"`);
+				setSuccess(t("milestone.archivedSuccess", { name: label }));
 				if (onRefreshData) {
 					await onRefreshData();
 				}
 				setTimeout(() => setSuccess(null), 3000);
 			} catch (err) {
 				console.error("Failed to archive milestone:", err);
-				setError(err instanceof Error ? err.message : "Failed to archive milestone.");
+				setError(err instanceof Error ? err.message : t("milestone.archiveFailed"));
 			} finally {
 				setArchivingMilestoneKey(null);
 			}
 		},
-		[onRefreshData],
+		[onRefreshData, t],
 	);
 
 	const getStatusBadgeClass = (status?: string | null) => {
@@ -365,12 +367,12 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 						</h3>
 						{isEmpty ? (
 							<span className="text-sm text-gray-400 dark:text-gray-500">
-								{isDragging ? "Drop here" : "No tasks"}
+								{isDragging ? t("milestone.dropHere") : t("milestone.noTasks")}
 							</span>
 						) : (
 							<div className="flex items-center gap-3">
 								<span className="text-sm text-gray-500 dark:text-gray-400">
-									{bucket.total} task{bucket.total === 1 ? "" : "s"}
+									{t("milestone.taskCount", { count: bucket.total })}
 								</span>
 								<span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
 									{progress}%
@@ -412,7 +414,7 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 								<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
 								</svg>
-								Board
+								{t("milestone.boardLink")}
 							</Link>
 							<Link
 								to={`/tasks?milestone=${encodeURIComponent(bucket.milestone ?? "")}`}
@@ -421,7 +423,7 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 								<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
 								</svg>
-								List
+								{t("milestone.listLink")}
 							</Link>
 							<button
 								type="button"
@@ -432,7 +434,7 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 								<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
 								</svg>
-								{isArchiving ? "Archiving..." : "Archive"}
+								{isArchiving ? t("milestone.archiving") : t("milestone.archiveButton")}
 							</button>
 						</div>
 						<button
@@ -442,7 +444,7 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 							onClick={() => setExpandedBuckets((c) => ({ ...c, [bucket.key]: !isExpanded }))}
 							className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
 						>
-							{isExpanded ? "Hide" : "Show"} tasks
+							{isExpanded ? t("milestone.hideTasks") : t("milestone.showTasks")}
 							<svg className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
 							</svg>
@@ -471,7 +473,7 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 							{sortedTasks.length > 10 && (
 								<div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
 									<Link to={`/tasks?milestone=${encodeURIComponent(bucket.milestone ?? "")}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-										View all {sortedTasks.length} tasks →
+										{t("milestone.viewAll", { count: sortedTasks.length })}
 									</Link>
 								</div>
 							)}
@@ -502,7 +504,7 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 							</svg>
 							<h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-								Unassigned tasks
+								{t("milestone.unassignedTasks")}
 							</h3>
 							<span className="text-sm text-gray-500 dark:text-gray-400">
 								({sortedActiveTasks.length})
@@ -513,7 +515,7 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 							onClick={() => setExpandedBuckets((c) => ({ ...c, "__unassigned": !isExpanded }))}
 							className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
 						>
-							{isExpanded ? "Collapse" : "Expand"}
+							{isExpanded ? t("common.collapse") : t("common.expand")}
 							<svg className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
 							</svg>
@@ -529,10 +531,10 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 										{/* Table header */}
 										<div className="grid grid-cols-[auto_auto_1fr_auto_auto] gap-3 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
 											<div className="w-6" /> {/* Drag handle column */}
-											<div className="w-24">ID</div>
-											<div>Title</div>
-											<div className="text-center w-24">Status</div>
-											<div className="text-center w-20">Priority</div>
+											<div className="w-24">{t("task.columnId")}</div>
+											<div>{t("milestone.columnTitle")}</div>
+											<div className="text-center w-24">{t("task.fieldStatus")}</div>
+											<div className="text-center w-20">{t("task.fieldPriority")}</div>
 										</div>
 
 										{/* Table rows */}
@@ -560,8 +562,8 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 													className="text-blue-600 dark:text-blue-400 hover:underline"
 												>
 													{showAllUnassigned
-														? "Show less ↑"
-														: `Show all ${sortedActiveTasks.length} tasks ↓`}
+														? t("milestone.showLess")
+														: t("milestone.showAll", { count: sortedActiveTasks.length })}
 												</button>
 											</div>
 										)}
@@ -569,14 +571,14 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 
 									{/* Hint */}
 									<p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
-										Drag tasks to a milestone below to assign them
+										{t("milestone.dragHint")}
 									</p>
 								</>
 							) : (
 								<p className="rounded-md border border-dashed border-gray-300 dark:border-gray-600 bg-white/70 dark:bg-gray-800/50 px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
 									{isSearchActive
-										? "No matching unassigned tasks."
-										: "No active unassigned tasks. Completed tasks are hidden."}
+										? t("milestone.noMatchingUnassigned")
+										: t("milestone.noUnassigned")}
 								</p>
 							)}
 						</div>
@@ -595,7 +597,7 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 			{/* Header */}
 			<div className="flex flex-wrap items-center justify-between gap-4 mb-6">
 				<div className="flex flex-wrap items-center gap-4">
-					<h1 className="text-2xl font-bold text-gray-900 dark:text-white">Milestones</h1>
+					<h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("milestones.title")}</h1>
 					<div className="relative w-full min-w-[240px] max-w-[420px]">
 						<span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 dark:text-gray-500">
 							<svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -603,22 +605,22 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 							</svg>
 						</span>
 						<label htmlFor="milestones-search" className="sr-only">
-							Search milestones
+							{t("milestones.searchLabel")}
 						</label>
 						<input
 							id="milestones-search"
 							type="text"
 							value={searchQuery}
 							onInput={(event) => setSearchQuery((event.target as HTMLInputElement).value)}
-							placeholder="Search by task ID or title"
-							aria-label="Search milestones"
+							placeholder={t("milestones.searchPlaceholder")}
+							aria-label={t("milestones.searchLabel")}
 							className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-stone-500 dark:focus:ring-stone-400 focus:border-transparent transition-colors duration-200"
 						/>
 						{isSearchActive && (
 							<button
 								type="button"
 								onClick={() => setSearchQuery("")}
-								aria-label="Clear milestone search"
+								aria-label={t("milestones.clearSearch")}
 								className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
 							>
 								<svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -650,7 +652,7 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 						onClick={() => setShowAddModal(true)}
 						className="inline-flex items-center px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-400 dark:focus:ring-offset-gray-900 transition-colors"
 					>
-						+ Add milestone
+						{t("milestones.addButton")}
 					</button>
 				</div>
 			</div>
@@ -659,14 +661,14 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 			{showSearchNoMatchHint && (
 				<div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3">
 					<p className="text-sm text-amber-800 dark:text-amber-200">
-						No milestones or tasks match &quot;{searchQueryTrimmed}&quot;.
+						{t("milestones.noMatch", { query: searchQueryTrimmed })}
 					</p>
 					<button
 						type="button"
 						onClick={() => setSearchQuery("")}
 						className="rounded-md border border-amber-300 dark:border-amber-700 px-3 py-1.5 text-xs font-medium text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
 					>
-						Clear search
+						{t("milestones.clearSearchButton")}
 					</button>
 				</div>
 			)}
@@ -686,7 +688,7 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 				<div className="mt-8">
 					{isSearchActive ? (
 						<div className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300">
-							<span>Completed milestones</span>
+							<span>{t("milestones.completedSection")}</span>
 							<span className="text-xs text-gray-400 dark:text-gray-500">({completedMilestones.length})</span>
 						</div>
 					) : (
@@ -695,7 +697,7 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 							onClick={() => setShowCompleted((value) => !value)}
 							className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
 						>
-							<span>Completed milestones</span>
+							<span>{t("milestones.completedSection")}</span>
 							<span className="text-xs text-gray-400 dark:text-gray-500">({completedMilestones.length})</span>
 							<svg
 								className={`w-4 h-4 transition-transform ${showCompleted ? "rotate-180" : ""}`}
@@ -721,20 +723,20 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 					<svg className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
 					</svg>
-					<p className="text-gray-500 dark:text-gray-400">No milestones yet. Create one to start organizing your tasks.</p>
+					<p className="text-gray-500 dark:text-gray-400">{t("milestones.emptyHint")}</p>
 				</div>
 			)}
 
 			{/* Add modal */}
-			<Modal isOpen={showAddModal} onClose={closeAddModal} title="Add milestone" maxWidthClass="max-w-md">
+			<Modal isOpen={showAddModal} onClose={closeAddModal} title={t("milestone.modalTitle")} maxWidthClass="max-w-md">
 				<form onSubmit={handleAddMilestone} className="space-y-4">
 					<div className="space-y-2">
-						<label className="text-sm font-medium text-gray-900 dark:text-gray-100">Milestone name</label>
+						<label className="text-sm font-medium text-gray-900 dark:text-gray-100">{t("milestone.nameLabel")}</label>
 						<input
 							type="text"
 							value={newMilestone}
 							onChange={(e) => handleNewMilestoneChange(e.target.value)}
-							placeholder="e.g. Release 1.0"
+							placeholder={t("milestone.namePlaceholder")}
 							autoFocus
 							className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
 						/>
@@ -746,14 +748,14 @@ const MilestonesPage: React.FC<MilestonesPageProps> = ({
 							onClick={closeAddModal}
 							className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
 						>
-							Cancel
+							{t("common.cancel")}
 						</button>
 						<button
 							type="submit"
 							disabled={isSaving || !newMilestone.trim()}
 							className="px-4 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60 transition-colors"
 						>
-							{isSaving ? "Saving..." : "Create"}
+							{isSaving ? t("milestone.saving") : t("milestone.createButton")}
 						</button>
 					</div>
 				</form>

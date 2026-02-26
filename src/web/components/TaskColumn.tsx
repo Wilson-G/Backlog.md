@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { type Task } from '../../types';
 import type { ReorderTaskPayload } from '../lib/api';
 import TaskCard from './TaskCard';
@@ -32,6 +33,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
   laneId,
   targetMilestone
 }) => {
+  const { t } = useTranslation();
   const [isDragOver, setIsDragOver] = React.useState(false);
   const [draggedTaskId, setDraggedTaskId] = React.useState<string | null>(null);
   const [dropPosition, setDropPosition] = React.useState<{ index: number; position: 'before' | 'after' } | null>(null);
@@ -208,7 +210,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
         {isDragOver && dragSourceStatus !== title && (
           <div className="border-2 border-green-400 dark:border-green-500 border-dashed rounded-md bg-green-50 dark:bg-green-900/20 p-4 text-center transition-colors duration-200">
             <div className="text-green-600 dark:text-green-400 text-sm font-medium transition-colors duration-200">
-              Drop task here to change status
+              {t('board.dropHere')}
             </div>
           </div>
         )}
@@ -216,8 +218,8 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
         {isEmpty && !isDragOver && (
           <div className="text-center py-2 text-gray-400 dark:text-gray-500 text-xs transition-colors duration-200">
             {dragSourceStatus && dragSourceStatus !== title
-              ? `Drop to move`
-              : `Empty`}
+              ? t('board.dropToMove')
+              : t('board.emptyColumn')}
           </div>
         )}
 
@@ -227,12 +229,12 @@ const TaskColumn: React.FC<TaskColumnProps> = ({
 	            <button
 	              onClick={onCleanup}
 	              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors duration-200"
-	              title="Clean up old completed tasks"
+	              title={t('cleanup.tooltip')}
 	            >
 	              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 	                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
-              Clean Up Old Tasks
+              {t('cleanup.oldTasksButton')}
             </button>
           </div>
         )}

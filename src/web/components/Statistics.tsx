@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiClient } from '../lib/api';
 import type { TaskStatistics } from '../../core/statistics';
 import type { Task } from '../../types';
@@ -17,10 +18,11 @@ interface StatisticsProps {
 }
 
 const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoading, onEditTask, projectName }) => {
+	const { t } = useTranslation();
 	const [statistics, setStatistics] = useState<StatisticsData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [loadingMessage, setLoadingMessage] = useState('Building statistics...');
+	const [loadingMessage, setLoadingMessage] = useState('');
 
 	useEffect(() => {
 		let isMounted = true;
@@ -35,13 +37,13 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 				
 				// Loading messages that reflect actual backend operations
 				const loadingMessages = [
-					'Building statistics...',
-					'Loading local tasks...',
-					'Loading completed tasks...',
-					'Merging tasks...',
-					'Checking task states across branches...',
-					'Loading drafts...',
-					'Calculating statistics...'
+					t('statistics.loadingBuilding'),
+					t('statistics.loadingLocal'),
+					t('statistics.loadingCompleted'),
+					t('statistics.loadingMerging'),
+					t('statistics.loadingBranches'),
+					t('statistics.loadingDrafts'),
+					t('statistics.loadingCalculating')
 				];
 
 				// Start with first message
@@ -72,7 +74,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 			} catch (err) {
 				if (isMounted) {
 					console.error('Failed to fetch statistics:', err);
-					setError('Failed to load statistics');
+					setError(t('statistics.error'));
 				}
 			} finally {
 				if (isMounted) {
@@ -89,7 +91,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 				clearInterval(messageInterval);
 			}
 		};
-	}, []);
+	}, [t]);
 
 	if (loading || externalLoading) {
 		return (
@@ -97,10 +99,10 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 				<LoadingSpinner size="lg" text="" />
 				<div className="text-center">
 					<p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-						{loading ? loadingMessage : 'Loading statistics...'}
+						{loading ? loadingMessage : t('statistics.loading')}
 					</p>
 					<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-						This might take a while...
+						{t('statistics.loadingHint')}
 					</p>
 				</div>
 			</div>
@@ -111,7 +113,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 		return (
 			<div className="p-8 text-center">
 				<div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
-					<p className="text-red-600 dark:text-red-400 font-medium">Error loading statistics</p>
+					<p className="text-red-600 dark:text-red-400 font-medium">{t('statistics.error')}</p>
 					<p className="text-red-500 dark:text-red-300 text-sm mt-1">{error}</p>
 				</div>
 			</div>
@@ -121,7 +123,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 	if (!statistics) {
 		return (
 			<div className="p-8 text-center">
-				<p className="text-gray-500 dark:text-gray-400">No statistics available</p>
+				<p className="text-gray-500 dark:text-gray-400">{t('statistics.empty')}</p>
 			</div>
 		);
 	}
@@ -158,7 +160,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 				<div className="flex-1 min-w-0">
 					<p className="font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</p>
 					<p className="text-sm text-gray-500 dark:text-gray-400">
-						{task.id} • {showDate === 'created' ? 'Created' : 'Updated'} {formatDate(displayDate)}
+						{task.id} • {showDate === 'created' ? t('statistics.created') : t('statistics.updated')} {formatDate(displayDate)}
 					</p>
 				</div>
 			</div>
@@ -247,10 +249,10 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 			{/* Header */}
 			<div className="text-center">
 				<h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-					{projectName ? `${projectName} Statistics` : 'Project Statistics'}
+					{projectName ? t('statistics.projectNameStatistics', { project: projectName }) : t('statistics.projectTitle')}
 				</h1>
 				<p className="text-gray-600 dark:text-gray-400">
-					Overview of your project's task metrics and activity
+					{t('statistics.overview')}
 				</p>
 			</div>
 
@@ -266,7 +268,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 						</div>
 						<div className="ml-4">
 							<p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{statistics.totalTasks}</p>
-							<p className="text-gray-600 dark:text-gray-400 text-sm">Total Tasks</p>
+							<p className="text-gray-600 dark:text-gray-400 text-sm">{t('statistics.totalTasks')}</p>
 						</div>
 					</div>
 				</div>
@@ -281,7 +283,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 						</div>
 						<div className="ml-4">
 							<p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{statistics.completedTasks}</p>
-							<p className="text-gray-600 dark:text-gray-400 text-sm">Completed</p>
+							<p className="text-gray-600 dark:text-gray-400 text-sm">{t('statistics.completed')}</p>
 						</div>
 					</div>
 				</div>
@@ -296,7 +298,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 						</div>
 						<div className="ml-4">
 							<p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{statistics.completionPercentage}%</p>
-							<p className="text-gray-600 dark:text-gray-400 text-sm">Completion</p>
+							<p className="text-gray-600 dark:text-gray-400 text-sm">{t('statistics.completion')}</p>
 						</div>
 					</div>
 				</div>
@@ -311,7 +313,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 						</div>
 						<div className="ml-4">
 							<p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{statistics.draftCount}</p>
-							<p className="text-gray-600 dark:text-gray-400 text-sm">Drafts</p>
+							<p className="text-gray-600 dark:text-gray-400 text-sm">{t('statistics.drafts')}</p>
 						</div>
 					</div>
 				</div>
@@ -319,7 +321,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 
 			{/* Progress Bar */}
 			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-				<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Overall Progress</h3>
+				<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('statistics.overallProgress')}</h3>
 				<div className="w-full bg-gray-200 dark:bg-gray-700 rounded-circle h-4 mb-2">
 					<div 
 						className="bg-gradient-to-r from-blue-500 to-green-500 h-4 rounded-circle transition-all duration-300"
@@ -327,8 +329,8 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 					></div>
 				</div>
 				<div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-					<span>{statistics.completedTasks} completed</span>
-					<span>{statistics.totalTasks - statistics.completedTasks} remaining</span>
+					<span>{statistics.completedTasks} {t('statistics.completedLabel')}</span>
+					<span>{statistics.totalTasks - statistics.completedTasks} {t('statistics.remaining')}</span>
 				</div>
 			</div>
 
@@ -336,7 +338,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 				{/* Status Distribution */}
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-					<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Status Distribution</h3>
+					<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('statistics.statusDistribution')}</h3>
 					<div className="space-y-4">
 						{Object.entries(statistics.statusCounts)
 							.filter(([, count]) => count > 0)
@@ -369,7 +371,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 
 				{/* Priority Distribution */}
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-					<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Priority Distribution</h3>
+					<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('statistics.priorityDistribution')}</h3>
 					<div className="space-y-4">
 						{Object.entries(statistics.priorityCounts)
 							.filter(([, count]) => count > 0)
@@ -378,7 +380,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 								<div className="flex items-center space-x-3">
 									<PriorityIcon priority={priority} />
 									<span className={`px-3 py-1 rounded-circle text-sm font-medium ${getPriorityColor(priority)}`}>
-										{priority === 'none' ? 'No Priority' : priority.charAt(0).toUpperCase() + priority.slice(1)}
+										{priority === 'none' ? t('priority.none') : (priority === 'high' ? t('priority.high') : priority === 'medium' ? t('priority.medium') : priority === 'low' ? t('priority.low') : priority.charAt(0).toUpperCase() + priority.slice(1))}
 									</span>
 								</div>
 								<div className="flex items-center space-x-3">
@@ -405,7 +407,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 				{/* Recently Created */}
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-					<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Recently Created</h3>
+					<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('statistics.recentlyCreated')}</h3>
 					{statistics.recentActivity.created.length > 0 ? (
 						<div className="space-y-3">
 							{statistics.recentActivity.created.map((task) => (
@@ -417,13 +419,13 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 							))}
 						</div>
 					) : (
-						<p className="text-gray-500 dark:text-gray-400 text-sm">No recently created tasks</p>
+						<p className="text-gray-500 dark:text-gray-400 text-sm">{t('statistics.noRecentCreated')}</p>
 					)}
 				</div>
 
 				{/* Recently Updated */}
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-					<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Recently Updated</h3>
+					<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('statistics.recentlyUpdated')}</h3>
 					{statistics.recentActivity.updated.length > 0 ? (
 						<div className="space-y-3">
 							{statistics.recentActivity.updated.map((task) => (
@@ -435,7 +437,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 							))}
 						</div>
 					) : (
-						<p className="text-gray-500 dark:text-gray-400 text-sm">No recently updated tasks</p>
+						<p className="text-gray-500 dark:text-gray-400 text-sm">{t('statistics.noRecentUpdated')}</p>
 					)}
 				</div>
 			</div>
@@ -443,32 +445,32 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 			{/* Project Health - Completely redesigned as a summary row */}
 			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
 				<div className="flex items-center justify-between">
-					<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Project Health</h3>
+					<h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('statistics.projectHealth')}</h3>
 					
 					<div className="flex items-center space-x-4 text-sm">
 						<div className="flex items-center space-x-1">
-							<span className="text-gray-600 dark:text-gray-400">Avg age:</span>
+							<span className="text-gray-600 dark:text-gray-400">{t('statistics.avgAge')}</span>
 							<span className="font-medium text-gray-900 dark:text-gray-100">{statistics.projectHealth.averageTaskAge}d</span>
 						</div>
 						
 						{statistics.projectHealth.staleTasks.length > 0 && (
 							<div className="flex items-center space-x-1">
 								<div className="w-2 h-2 bg-yellow-500 rounded-circle"></div>
-								<span className="font-medium text-yellow-700 dark:text-yellow-400">{statistics.projectHealth.staleTasks.length} stale</span>
+								<span className="font-medium text-yellow-700 dark:text-yellow-400">{statistics.projectHealth.staleTasks.length} {t('statistics.stale')}</span>
 							</div>
 						)}
 						
 						{statistics.projectHealth.blockedTasks.length > 0 && (
 							<div className="flex items-center space-x-1">
 								<div className="w-2 h-2 bg-red-500 rounded-circle"></div>
-								<span className="font-medium text-red-700 dark:text-red-400">{statistics.projectHealth.blockedTasks.length} blocked</span>
+								<span className="font-medium text-red-700 dark:text-red-400">{statistics.projectHealth.blockedTasks.length} {t('statistics.blocked')}</span>
 							</div>
 						)}
 						
 						{statistics.projectHealth.staleTasks.length === 0 && statistics.projectHealth.blockedTasks.length === 0 && (
 							<div className="flex items-center space-x-1">
 								<div className="w-2 h-2 bg-green-500 rounded-circle"></div>
-								<span className="font-medium text-green-700 dark:text-green-400">All good!</span>
+								<span className="font-medium text-green-700 dark:text-green-400">{t('statistics.allGood')}</span>
 							</div>
 						)}
 					</div>
@@ -482,10 +484,10 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 							{statistics.projectHealth.staleTasks.length > 0 && (
 								<div>
 									<h4 className="font-medium text-yellow-700 dark:text-yellow-400 mb-3 text-sm">
-										Stale Tasks (&gt;30 days)
+										{t('statistics.staleTasks')}
 									</h4>
 									<p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-										Tasks that haven't been updated in over 30 days and may need attention or archiving
+										{t('statistics.staleTasksHint')}
 									</p>
 									<div className="space-y-2">
 										{statistics.projectHealth.staleTasks.slice(0, 3).map((task) => (
@@ -498,7 +500,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 										))}
 										{statistics.projectHealth.staleTasks.length > 3 && (
 											<p className="text-xs text-gray-500 dark:text-gray-400 px-3">
-												+{statistics.projectHealth.staleTasks.length - 3} more stale tasks
+												+{statistics.projectHealth.staleTasks.length - 3} {t('statistics.moreStale')}
 											</p>
 										)}
 									</div>
@@ -509,10 +511,10 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 							{statistics.projectHealth.blockedTasks.length > 0 && (
 								<div>
 									<h4 className="font-medium text-red-700 dark:text-red-400 mb-3 text-sm">
-										Blocked Tasks
+										{t('statistics.blockedTasks')}
 									</h4>
 									<p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-										Tasks that cannot progress because their dependencies are not yet completed
+										{t('statistics.blockedHint')}
 									</p>
 									<div className="space-y-2">
 										{statistics.projectHealth.blockedTasks.slice(0, 3).map((task) => (
@@ -525,7 +527,7 @@ const Statistics: React.FC<StatisticsProps> = ({ tasks, isLoading: externalLoadi
 										))}
 										{statistics.projectHealth.blockedTasks.length > 3 && (
 											<p className="text-xs text-gray-500 dark:text-gray-400 px-3">
-												+{statistics.projectHealth.blockedTasks.length - 3} more blocked tasks
+												+{statistics.projectHealth.blockedTasks.length - 3} {t('statistics.moreBlocked')}
 											</p>
 										)}
 									</div>

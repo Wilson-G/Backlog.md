@@ -400,6 +400,99 @@ export class BacklogServer {
 					"/api/search": {
 						GET: async (req: Request) => await this.handleSearch(req),
 					},
+					"/api/projects": {
+						GET: async () => {
+							const { loadProjectsRegistry } = await import("../utils/projects-registry.ts");
+							const projects = loadProjectsRegistry();
+							const currentPath = this.core.filesystem.rootDir;
+							const result = projects.map((p) => ({
+								...p,
+								active: p.path === currentPath,
+							}));
+							if (!result.some((p) => p.active)) {
+								result.unshift({
+									name: this.projectName,
+									path: currentPath,
+									active: true,
+								});
+							}
+							return Response.json(result);
+						},
+					},
+					"/api/projects/switch": {
+						POST: async (req: Request) => {
+							try {
+								const { path: projectPath } = (await req.json()) as { path: string };
+								if (!projectPath) {
+									return Response.json({ error: "path is required" }, { status: 400 });
+								}
+								const { existsSync } = await import("node:fs");
+								const { join } = await import("node:path");
+								if (!existsSync(join(projectPath, "backlog"))) {
+									return Response.json({ error: "No backlog directory found at the specified path" }, { status: 400 });
+								}
+								await this.switchProject(projectPath);
+								return Response.json({ success: true, projectName: this.projectName });
+							} catch (error) {
+								return Response.json(
+									{
+										error: error instanceof Error ? error.message : "Failed to switch project",
+									},
+									{ status: 500 },
+								);
+							}
+						},
+					},
+					"/api/viking/ls": {
+						GET: async (req: Request) => {
+							try {
+								const url = new URL(req.url);
+								const path = url.searchParams.get("path") || "viking://resources";
+								const recursive = url.searchParams.get("recursive") === "true";
+								const args = recursive ? ["ls", "-r", path] : ["ls", path];
+								const result = await this.runVikingCommand(args);
+								return Response.json(result);
+							} catch (error) {
+								return Response.json(
+									{ error: error instanceof Error ? error.message : "Viking command failed" },
+									{ status: 500 },
+								);
+							}
+						},
+					},
+					"/api/viking/content": {
+						GET: async (req: Request) => {
+							try {
+								const url = new URL(req.url);
+								const uri = url.searchParams.get("uri");
+								const level = url.searchParams.get("level") || "abstract";
+								if (!uri) {
+									return Response.json({ error: "uri parameter is required" }, { status: 400 });
+								}
+								const command = level === "overview" ? "overview" : level === "read" ? "read" : "abstract";
+								const result = await this.runVikingCommand([command, uri]);
+								return Response.json(result);
+							} catch (error) {
+								return Response.json(
+									{ error: error instanceof Error ? error.message : "Viking command failed" },
+									{ status: 500 },
+								);
+							}
+						},
+					},
+					"/api/viking/status": {
+						GET: async () => {
+							try {
+								const result = await this.runVikingCommand(["status"]);
+								return Response.json(result);
+							} catch (error) {
+								return Response.json(
+									{ error: error instanceof Error ? error.message : "Viking not available" },
+									{ status: 500 },
+								);
+							}
+						},
+					},
 					"/sequences": {
 						GET: async () => await this.handleGetSequences(),
 					},
@@ -528,6 +621,40 @@ export class BacklogServer {
 		}
 
 		this._stopping = false;
+	}
+
+	async switchProject(projectPath: string): Promise<void> {
+		// Clean up old watchers and services
+		this.unsubscribeContentStore?.();
+		this.unsubscribeContentStore = undefined;
+		this.configWatcher?.stop();
+		this.configWatcher = null;
+		this.core.disposeSearchService();
+		this.core.disposeContentStore();
+		this.contentStore = null;
+		this.searchService = null;
+		this.storeReadyBroadcasted = false;
+
+		// Create new core
+		this.core = new Core(projectPath, { enableWatchers: true });
+
+		// Reload config
+		const config = await this.core.filesystem.loadConfig();
+		this.projectName = config?.projectName || "Untitled Project";
+
+		// Set up new config watcher
+		this.configWatcher = watchConfig(this.core, {
+			onConfigChanged: () => {
+				this.broadcastConfigUpdated();
+			},
+		});
+
+		// Re-initialize services
+		await this.ensureServicesReady();
+
+		// Broadcast to all clients that they should reload
+		this.broadcastConfigUpdated();
+		this.broadcastTasksUpdated();
 	}
 
 	private async openBrowser(url: string): Promise<void> {
@@ -1503,6 +1630,48 @@ export class BacklogServer {
 				projectPath: this.core.filesystem.rootDir,
 			});
 		}
+	}
+
+	private async runVikingCommand(args: string[]): Promise<{ output: string; error?: string }> {
+		const { spawn } = await import("node:child_process");
+		return new Promise((resolve, reject) => {
+			const proc = spawn("python3", [`${process.env.HOME}/.openviking/ov_agent.py`, ...args], {
+				timeout: 30000,
+				env: { ...process.env },
+			});
+
+			let stdout = "";
+			let stderr = "";
+
+			proc.stdout.on("data", (data: Buffer) => {
+				stdout += data.toString();
+			});
+			proc.stderr.on("data", (data: Buffer) => {
+				stderr += data.toString();
+			});
+
+			proc.on("close", (code: number | null) => {
+				if (code === 0) {
+					try {
+						const parsed = JSON.parse(stdout.trim());
+						resolve({
+							output: typeof parsed === "string" ? parsed : JSON.stringify(parsed, null, 2),
+						});
+					} catch {
+						resolve({ output: stdout.trim() });
+					}
+				} else {
+					resolve({
+						output: stdout.trim(),
+						error: stderr.trim() || `Process exited with code ${code}`,
+					});
+				}
+			});
+
+			proc.on("error", (err: Error) => {
+				reject(new Error(`Failed to run Viking: ${err.message}`));
+			});
+		});
 	}
 
 	private async handleInit(req: Request): Promise<Response> {

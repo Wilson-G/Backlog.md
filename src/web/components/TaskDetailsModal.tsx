@@ -7,6 +7,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import MDEditor from "@uiw/react-md-editor";
 import AcceptanceCriteriaEditor from "./AcceptanceCriteriaEditor";
 import ChatNotesView from "./ChatNotesView";
+import ConversationTimeline from "./ConversationTimeline";
 import MermaidMarkdown from './MermaidMarkdown';
 import VikingPanel from "./VikingPanel";
 import ChipInput from "./ChipInput";
@@ -80,7 +81,9 @@ export const TaskDetailsModal: React.FC<Props> = ({
   const [description, setDescription] = useState(task?.description || "");
   const [plan, setPlan] = useState(task?.implementationPlan || "");
   const [notes, setNotes] = useState(task?.implementationNotes || "");
-  const [notesViewMode, setNotesViewMode] = useState<"chat" | "markdown">("chat");
+  const [notesViewMode, setNotesViewMode] = useState<"timeline" | "chat" | "markdown">(
+    task?.id ? "timeline" : "chat",
+  );
   const [finalSummary, setFinalSummary] = useState(task?.finalSummary || "");
   const [criteria, setCriteria] = useState<AcceptanceCriterion[]>(task?.acceptanceCriteriaItems || []);
   const defaultDefinitionOfDone = useMemo(
@@ -887,36 +890,58 @@ export const TaskDetailsModal: React.FC<Props> = ({
           <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
             <div className="flex items-center justify-between mb-3">
               <SectionHeader title={t("task.sectionImplementationNotes")} />
-              {notes && (
-                <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setNotesViewMode("chat")}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors duration-200 ${
-                      notesViewMode === "chat"
-                        ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
-                        : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                    }`}
-                    title={t("chat.viewModeTooltip")}
-                  >
-                    {t("chat.viewMode")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNotesViewMode("markdown")}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors duration-200 ${
-                      notesViewMode === "markdown"
-                        ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
-                        : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                    }`}
-                    title={t("chat.editModeTooltip")}
-                  >
-                    {t("chat.editMode")}
-                  </button>
+              <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5">
+                  {task?.id && (
+                    <button
+                      type="button"
+                      onClick={() => setNotesViewMode("timeline")}
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-colors duration-200 ${
+                        notesViewMode === "timeline"
+                          ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
+                          : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                      }`}
+                      title={t("conversation.timelineTooltip")}
+                    >
+                      {t("conversation.timeline")}
+                    </button>
+                  )}
+                  {notes && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setNotesViewMode("chat")}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-colors duration-200 ${
+                          notesViewMode === "chat"
+                            ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
+                            : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                        }`}
+                        title={t("chat.viewModeTooltip")}
+                      >
+                        {t("chat.viewMode")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNotesViewMode("markdown")}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-colors duration-200 ${
+                          notesViewMode === "markdown"
+                            ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm"
+                            : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                        }`}
+                        title={t("chat.editModeTooltip")}
+                      >
+                        {t("chat.editMode")}
+                      </button>
+                    </>
+                  )}
                 </div>
-              )}
             </div>
-            {!notes && mode === "preview" ? (
+            {notesViewMode === "timeline" && task?.id ? (
+              <ConversationTimeline
+                taskId={task.id}
+                theme={theme}
+                readOnly={mode === "preview"}
+              />
+            ) : !notes && mode === "preview" ? (
               <div className="text-sm text-gray-500 dark:text-gray-400">{t("task.noNotes")}</div>
             ) : notesViewMode === "chat" ? (
               <ChatNotesView

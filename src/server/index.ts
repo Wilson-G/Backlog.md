@@ -10,6 +10,15 @@ import type { SearchPriorityFilter, SearchResultType, Task, TaskUpdateInput } fr
 import { watchConfig } from "../utils/config-watcher.ts";
 import { getVersion } from "../utils/version.ts";
 
+interface ConversationEntry {
+	id: string;
+	timestamp: string;
+	role: "user" | "agent";
+	preview: string;
+	content: string;
+	vikingUri?: string;
+}
+
 // Regex pattern to match any prefix (letters followed by dash)
 const PREFIX_PATTERN = /^[a-zA-Z]+-/i;
 const DEFAULT_PREFIX = "task-";
@@ -747,6 +756,14 @@ export class BacklogServer {
 			return new Response(faviconFile, {
 				headers: { "Content-Type": "image/png" },
 			});
+		}
+
+		// Conversations API — manual routing since Bun's native routes have matching limits
+		const convMatch = pathname.match(/^\/api\/conversations\/(.+)$/);
+		if (convMatch) {
+			const taskId = decodeURIComponent(convMatch[1]);
+			if (req.method === "GET") return this.handleGetConversations(taskId);
+			if (req.method === "POST") return this.handleAddConversation(req, taskId);
 		}
 
 		// For all other routes, return 404 since routes should handle all valid paths
@@ -1672,6 +1689,100 @@ export class BacklogServer {
 				reject(new Error(`Failed to run Viking: ${err.message}`));
 			});
 		});
+	}
+
+	private getConversationsDir(): string {
+		const { join } = require("node:path");
+		return join(this.core.filesystem.rootDir, "backlog", "conversations");
+	}
+
+	private getConversationsFile(taskId: string): string {
+		const { join } = require("node:path");
+		return join(this.getConversationsDir(), `${taskId.toUpperCase()}.json`);
+	}
+
+	private async readConversations(taskId: string): Promise<ConversationEntry[]> {
+		const { existsSync, readFileSync } = require("node:fs");
+		const filePath = this.getConversationsFile(taskId);
+		if (!existsSync(filePath)) return [];
+		try {
+			return JSON.parse(readFileSync(filePath, "utf-8"));
+		} catch {
+			return [];
+		}
+	}
+
+	private async writeConversations(taskId: string, entries: ConversationEntry[]): Promise<void> {
+		const { existsSync, mkdirSync, writeFileSync } = require("node:fs");
+		const dir = this.getConversationsDir();
+		if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+		writeFileSync(this.getConversationsFile(taskId), JSON.stringify(entries, null, 2), "utf-8");
+	}
+
+	private async handleGetConversations(taskId: string): Promise<Response> {
+		try {
+			const entries = await this.readConversations(taskId);
+			return Response.json(entries);
+		} catch (error) {
+			return Response.json(
+				{ error: error instanceof Error ? error.message : "Failed to read conversations" },
+				{ status: 500 },
+			);
+		}
+	}
+
+	private async handleAddConversation(req: Request, taskId: string): Promise<Response> {
+		try {
+			const body = await req.json();
+			const { role, content } = body as { role: "user" | "agent"; content: string };
+			if (!role || !content) {
+				return Response.json({ error: "role and content are required" }, { status: 400 });
+			}
+
+			const now = new Date();
+			const timestamp = now.toISOString();
+			const id = `conv-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
+			const preview =
+				content.length > 80 ? content.replace(/\n/g, " ").slice(0, 80) + "…" : content.replace(/\n/g, " ");
+
+			const entry: ConversationEntry = { id, timestamp, role, preview, content };
+
+			// Store in Viking (best-effort, non-blocking)
+			const vikingKey = `conv/${taskId}/${now.toISOString().replace(/[:.]/g, "-")}-${role}`;
+			this.runVikingCommand(["write", vikingKey, content])
+				.then((result) => {
+					try {
+						const parsed = JSON.parse(result.output);
+						if (parsed.uri) {
+							entry.vikingUri = parsed.uri;
+							this.readConversations(taskId).then((entries) => {
+								const idx = entries.findIndex((e) => e.id === entry.id);
+								if (idx >= 0) {
+									entries[idx] = entry;
+									this.writeConversations(taskId, entries);
+								}
+							});
+						}
+					} catch {
+						/* ignore Viking storage failure */
+					}
+				})
+				.catch(() => {
+					/* ignore Viking storage failure */
+				});
+
+			const entries = await this.readConversations(taskId);
+			entries.push(entry);
+			await this.writeConversations(taskId, entries);
+
+			return Response.json(entry, { status: 201 });
+		} catch (error) {
+			return Response.json(
+				{ error: error instanceof Error ? error.message : "Failed to add conversation" },
+				{ status: 500 },
+			);
+		}
 	}
 
 	private async handleInit(req: Request): Promise<Response> {

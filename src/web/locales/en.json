@@ -518,6 +518,19 @@
 		"viewModeTooltip": "View notes as conversation",
 		"editModeTooltip": "Edit raw markdown"
 	},
+	"conversation": {
+		"timeline": "Timeline",
+		"timelineTooltip": "View conversation timeline (Viking-powered)",
+		"emptyState": "No conversations yet. Start by typing below.",
+		"inputPlaceholder": "Type a message... (⌘+Enter to send)",
+		"send": "Send",
+		"sending": "Sending...",
+		"sendHint": "⌘+Enter to send. Messages are stored in Viking memory.",
+		"loading": "Loading...",
+		"expand": "Expand ▸",
+		"expandMore": "Load more detail ▸",
+		"collapse": "Collapse ▴"
+	},
 	"viking": {
 		"panelTitle": "Viking Context",
 		"uriPlaceholder": "viking://resources/...",

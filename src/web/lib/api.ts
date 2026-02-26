@@ -11,6 +11,15 @@ import type {
 	TaskStatus,
 } from "../../types/index.ts";
 
+export interface ConversationEntry {
+	id: string;
+	timestamp: string;
+	role: "user" | "agent";
+	preview: string;
+	content: string;
+	vikingUri?: string;
+}
+
 const API_BASE = "/api";
 
 export interface ReorderTaskPayload {
@@ -479,6 +488,17 @@ export class ApiClient {
 			body: JSON.stringify({ path }),
 		});
 		return await response.json();
+	}
+
+	async fetchConversations(taskId: string): Promise<ConversationEntry[]> {
+		return this.fetchJson<ConversationEntry[]>(`${API_BASE}/conversations/${encodeURIComponent(taskId)}`);
+	}
+
+	async addConversation(taskId: string, role: "user" | "agent", content: string): Promise<ConversationEntry> {
+		return this.fetchJson<ConversationEntry>(`${API_BASE}/conversations/${encodeURIComponent(taskId)}`, {
+			method: "POST",
+			body: JSON.stringify({ role, content }),
+		});
 	}
 
 	async vikingLs(path?: string, recursive?: boolean): Promise<{ output: string; error?: string }> {

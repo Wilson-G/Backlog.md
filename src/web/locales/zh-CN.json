@@ -518,6 +518,19 @@
 		"viewModeTooltip": "以对话形式查看笔记",
 		"editModeTooltip": "编辑原始 Markdown"
 	},
+	"conversation": {
+		"timeline": "时间线",
+		"timelineTooltip": "查看对话时间线（Viking 记忆驱动）",
+		"emptyState": "暂无对话。在下方输入开始交流。",
+		"inputPlaceholder": "输入消息... (⌘+Enter 发送)",
+		"send": "发送",
+		"sending": "发送中...",
+		"sendHint": "⌘+Enter 发送。消息存储到 Viking 记忆中。",
+		"loading": "加载中...",
+		"expand": "展开详情 ▸",
+		"expandMore": "加载更多 ▸",
+		"collapse": "收起 ▴"
+	},
 	"viking": {
 		"panelTitle": "Viking 上下文",
 		"uriPlaceholder": "viking://resources/...",
